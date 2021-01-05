@@ -1,2 +1,5 @@
 # lernsax
-LernSax API Wrapper
+API Wrapper der jsonrpc von unserer lieblings Lernplattform.
+
+## Dokumentation
+tbd
