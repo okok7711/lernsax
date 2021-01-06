@@ -4,6 +4,11 @@ from bs4 import BeautifulSoup
 
 # LernSucks API Wrapper
 
+#b6cb2f9e
+#7e01a16d
+#5ac2a339
+# 65998582288818972260992689327361541893261525
+# 65998582288818972260992689327451541893261525
 
 def jsonrpc(list):
     return [
@@ -19,7 +24,7 @@ class Client:
     def __init__(self, email, password) -> None:
         self.email = email
         self.password = password
-        self.sid = ""
+        self.sid = "" 
         self.api = "https://www.lernsax.de/jsonrpc.php"
     def post(self, json):
         return requests.post(self.api, json=json).json()
@@ -30,11 +35,25 @@ class Client:
             return res
         else:
             if res[0]["result"]["errno"] == "107": raise exceptions.AccessDenied(res[0]["result"])
+            elif res[0]["result"]["errno"] == "9999": raise exceptions.ConsequentialError(res[0]["result"])
             else: raise exceptions.LoginError(res[0]["result"])
-    def getTasks(self):
-        res = self.post(jsonrpc([[1,"set_session",  {"session_id": str(self.sid)}], [2, "set_focus", {"object": "trusts"}], [3, "get_url_for_autologin", {"disable_logout": True, "disable_reception_of_quick_messages": True, "enslave_session": True, "locale": "en", "ping_master": 1, "target_url_path": "/wws/105500.php"}]]))
+    def logout(self):
+        res = self.post(jsonrpc([[1,"set_session",{"session_id":self.sid}],[2, "set_focus", {"object":"settings"}],[3, "logout",{}]]))
         if res[-1]["result"]["return"] == "OK":
-            resHtml = requests.get(res[-1]["result"]["url"], allow_redirects= True).text
-            soup = BeautifulSoup(resHtml, "html.parser")
-            tasks = soup.find_all('a', attrs={"href": "#", "class": "oc", "data-popup": True})
-            return tasks
+            self.sid = ""
+            return res
+        else:
+            raise exceptions.LogoutError(res[-1]["result"])
+    def getTasks(self):
+        if self.sid:
+            try:
+                url = f"https://www.lernsax.de//wws/105500.php?sid={self.sid}"
+                res = requests.get(url, allow_redirects= True)
+                resHtml = res.text
+                soup = BeautifulSoup(resHtml, "html.parser")
+                tasks = soup.find_all('a', attrs={"href": "#", "class": "oc", "data-popup": True})
+                return tasks
+            except:
+                raise exceptions.TaskError()
+        else: 
+            raise  exceptions.NotLoggedIn()
