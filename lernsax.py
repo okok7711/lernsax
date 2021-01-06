@@ -1,14 +1,8 @@
 import requests, json, time
-from util import exceptions
+from .util import exceptions
 from bs4 import BeautifulSoup
 
 # LernSucks API Wrapper
-
-#b6cb2f9e
-#7e01a16d
-#5ac2a339
-# 65998582288818972260992689327361541893261525
-# 65998582288818972260992689327451541893261525
 
 def jsonrpc(list):
     return [
@@ -21,17 +15,17 @@ def jsonrpc(list):
     ]
 
 class Client:
-    def __init__(self, email, password) -> None:
-        self.email = email
-        self.password = password
+    def __init__(self) -> None:
+        self.email = ""
+        self.password = ""
         self.sid = "" 
         self.api = "https://www.lernsax.de/jsonrpc.php"
     def post(self, json):
         return requests.post(self.api, json=json).json()
-    def login(self):
-        res = self.post(jsonrpc([[1, "login", {"login": self.email, "password": self.password, "get_miniature": True}], [999, "get_information", {}]]))
+    def login(self, email, password):
+        res = self.post(jsonrpc([[1, "login", {"login": email, "password": password, "get_miniature": True}], [999, "get_information", {}]]))
         if res[0]["result"]["return"] == "OK":
-            self.sid = res[1]["result"]["session_id"]
+            self.sid, self.email, self.password = res[1]["result"]["session_id"], email, password
             return res
         else:
             if res[0]["result"]["errno"] == "107": raise exceptions.AccessDenied(res[0]["result"])
