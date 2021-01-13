@@ -14,13 +14,13 @@ from bs4 import BeautifulSoup
 from . import exceptions
 
 
-def jsonrpc(data):
+def jsonrpc(data: list):
     return [
         {"id": k[0], "jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data
     ]
 
 
-def login_to_lernsax(client, email, password):
+def login_to_lernsax(client, email: str, password: str) -> dict:
     """ Enter the LernSax session """
     results_raw = client.post(
         jsonrpc(
@@ -53,7 +53,7 @@ def login_to_lernsax(client, email, password):
             raise exceptions.LoginError(results[0].result)
 
 
-def logout_from_lernsax(client):
+def logout_from_lernsax(client) -> dict:
     """ Exit the LernSax session """
     results_raw = client.post(
         jsonrpc(
@@ -72,15 +72,13 @@ def logout_from_lernsax(client):
         raise exceptions.LogoutError(results[-1].result)
 
 
-def get_lernsax_tasks(client):
+def get_lernsax_tasks(client) -> BeautifulSoup:
     """ Get LernSax tasks """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-
     url = f"{client.root_url}/wws/105500.php?sid={client.sid}"
     res = requests.get(url, allow_redirects=True)
     resHtml = res.text
-
     try:
         soup = BeautifulSoup(resHtml, "html.parser")
         tasks = soup.find_all(
@@ -89,3 +87,114 @@ def get_lernsax_tasks(client):
         return tasks
     except:
         raise exceptions.TaskError()
+
+def get_lernsax_files(client, login: str, recursive: bool) -> dict:
+    """ Gets directories via lernsax login email """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id":client.sid}],
+                [2, "set_focus", {"login": login, "object": "files"}],
+                [3, "get_entries", {"folder_id": "", "get_files": 1, "get_folders": 1, "recursive": int(recursive)}]
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        raise exceptions.FileError(results_raw[-1])
+
+def refresh_lernsax_session(client) -> dict:
+    """ refreshes LernSax sessions. """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    return client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}]
+            ]
+        )
+    )
+
+def get_storage_state(client, login: str) -> dict:
+    """ Gets amount of used storage and free storage """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    return client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id":client.sid}],
+                [2, "set_focus", {"login": login, "object": "files"}],
+                [3, "get_state", {}]
+            ]
+        )
+    )
+
+def get_lernsax_board(client, login: str) -> dict:
+    """ Gets messages board for specified login """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    return client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id":client.sid}],
+                [2, "set_focus", {"login": login, "object": "files"}],
+                [3, "get_entries", {}]
+            ]
+        )
+    )
+
+def get_lernsax_notes(client, login: str) -> dict:
+    """ Gets messages board for specified login """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    return client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id":client.sid}],
+                [2, "set_focus", {"login": login, "object": "notes"}],
+                [3, "get_entries", {}]
+            ]
+        )
+    )
+
+def add_lernsax_note(client, title: str, text: str) -> dict:
+    """ adds a note """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id":client.sid}],
+                [2, "set_focus", {"object": "notes"}],
+                [3, "add_entry", {"text": text, "title": title}]
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        raise exceptions.NoteError(results_raw[-1])
+
+def delete_lernsax_note(client, id: int) -> dict:
+    """ deletes a note """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id":client.sid}],
+                [2, "set_focus", {"object": "notes"}],
+                [3, "delete_entry", {"id": id}]
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        raise exceptions.NoteError(results_raw[-1])

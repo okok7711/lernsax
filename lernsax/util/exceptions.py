@@ -14,7 +14,15 @@ class LogoutError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+class LogoutError(Exception):
+    def __init__(*args, **kwargs):
+        Exception.__init__(*args, **kwargs)
+
 class TaskError(Exception):
+    def __init__(*args, **kwargs):
+        Exception.__init__(*args, **kwargs)
+
+class FileError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
