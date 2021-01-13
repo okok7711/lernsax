@@ -1,0 +1,6 @@
+# 3rd-party dependencies needed by the LernSucks API Wrapper
+# Install with pip install -r requirements.txt
+
+bs4
+python-box
+requests
