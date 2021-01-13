@@ -54,6 +54,13 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
             raise exceptions.LoginError(results[0].result)
 
 
+def refresh_lernsax_session(client) -> dict:
+    """ Refreshes current LernSax session. """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    return client.post(jsonrpc([[1, "set_session", {"session_id": client.sid}]]))
+
+
 def logout_from_lernsax(client) -> dict:
     """ Exit the LernSax session """
     results_raw = client.post(
@@ -89,6 +96,7 @@ def get_lernsax_tasks(client) -> BeautifulSoup:
     except:
         raise exceptions.TaskError()
 
+
 def get_lernsax_files(client, login: str, recursive: bool) -> dict:
     """ Gets directories via lernsax login email """
     if not client.sid:
@@ -98,7 +106,16 @@ def get_lernsax_files(client, login: str, recursive: bool) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
-                [3, "get_entries", {"folder_id": "", "get_files": 1, "get_folders": 1, "recursive": int(recursive)}]
+                [
+                    3,
+                    "get_entries",
+                    {
+                        "folder_id": "",
+                        "get_files": 1,
+                        "get_folders": 1,
+                        "recursive": int(recursive),
+                    },
+                ],
             ]
         )
     )
@@ -108,17 +125,6 @@ def get_lernsax_files(client, login: str, recursive: bool) -> dict:
     else:
         raise exceptions.FileError(results_raw[-1])
 
-def refresh_lernsax_session(client) -> dict:
-    """ refreshes LernSax sessions. """
-    if not client.sid:
-        raise exceptions.NotLoggedIn()
-    return client.post(
-        jsonrpc(
-            [
-                [1, "set_session", {"session_id": client.sid}]
-            ]
-        )
-    )
 
 def get_storage_state(client, login: str) -> dict:
     """ Gets amount of used storage and free storage """
@@ -129,10 +135,11 @@ def get_storage_state(client, login: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
-                [3, "get_state", {}]
+                [3, "get_state", {}],
             ]
         )
     )
+
 
 def get_lernsax_board(client, login: str) -> dict:
     """ Gets messages board for specified login """
@@ -143,10 +150,11 @@ def get_lernsax_board(client, login: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
-                [3, "get_entries", {}]
+                [3, "get_entries", {}],
             ]
         )
     )
+
 
 def get_lernsax_notes(client, login: str) -> dict:
     """ Gets messages board for specified login """
@@ -157,10 +165,11 @@ def get_lernsax_notes(client, login: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "notes"}],
-                [3, "get_entries", {}]
+                [3, "get_entries", {}],
             ]
         )
     )
+
 
 def add_lernsax_note(client, title: str, text: str) -> dict:
     """ adds a note """
@@ -171,7 +180,7 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "notes"}],
-                [3, "add_entry", {"text": text, "title": title}]
+                [3, "add_entry", {"text": text, "title": title}],
             ]
         )
     )
@@ -180,6 +189,7 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
         return results_raw
     else:
         raise exceptions.NoteError(results_raw[-1])
+
 
 def delete_lernsax_note(client, id: int) -> dict:
     """ deletes a note """
@@ -190,7 +200,7 @@ def delete_lernsax_note(client, id: int) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "notes"}],
-                [3, "delete_entry", {"id": id}]
+                [3, "delete_entry", {"id": id}],
             ]
         )
     )
@@ -199,6 +209,7 @@ def delete_lernsax_note(client, id: int) -> dict:
         return results_raw
     else:
         raise exceptions.NoteError(results_raw[-1])
+
 
 def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
     """ Sends an email """
@@ -209,7 +220,7 @@ def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "mailbox"}],
-                [3, "send_mail", {"to": to, "subject": subject, "body_plain": body}]
+                [3, "send_mail", {"to": to, "subject": subject, "body_plain": body}],
             ]
         )
     )
@@ -218,6 +229,7 @@ def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
         return results_raw
     else:
         raise exceptions.EmailError(results_raw[-1])
+
 
 def get_lernsax_emails(client, folder_id: str) -> dict:
     """ Gets emails from a folder id """
@@ -228,11 +240,12 @@ def get_lernsax_emails(client, folder_id: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "mailbox"}],
-                [3, "get_messages", {"folder_id": folder_id}]
+                [3, "get_messages", {"folder_id": folder_id}],
             ]
         )
     )
     return results
+
 
 def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
     """ reads an email with a certain message id """
@@ -243,7 +256,7 @@ def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "mailbox"}],
-                [3, "read_message", {"folder_id": folder_id, "message_id": message_id}]
+                [3, "read_message", {"folder_id": folder_id, "message_id": message_id}],
             ]
         )
     )
@@ -256,6 +269,7 @@ def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
     else:
         raise exceptions.EmailError(results_raw[-1])
 
+
 def get_lernsax_email_folders(client):
     """ returns the folders to get the id """
     if not client.sid:
@@ -265,7 +279,7 @@ def get_lernsax_email_folders(client):
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "mailbox"}],
-                [3, "get_folders", {}]
+                [3, "get_folders", {}],
             ]
         )
     )
