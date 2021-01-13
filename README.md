@@ -1,5 +1,6 @@
 # lernsax
-API Wrapper der jsonrpc von unserer lieblings Lernplattform.
+API Wrapper von unserer lieblings Lernplattform durch die jsonrpc und das scrapen von den php Dateien.
+
 
 ## Dokumentation
 tbd
