@@ -7,7 +7,7 @@
 import requests
 
 # Package modules
-from .util.communicator import get_lernsax_tasks, login_to_lernsax, logout_from_lernsax, get_lernsax_notes, get_lernsax_board, get_lernsax_files, get_storage_state, delete_lernsax_note, add_lernsax_note
+from .util.communicator import *
 
 
 class Client:
@@ -47,3 +47,15 @@ class Client:
     
     def delete_note(self, id):
         return delete_lernsax_note(self, id)
+
+    def send_email(self, subject, body, to):
+        return send_lernsax_email(self, body, to, subject)
+    
+    def get_emails(self, folder_id):
+        return get_lernsax_emails(self, folder_id)
+    
+    def read_email(self, folder_id, message_id):
+        return read_lernsax_email(self, folder_id, message_id)
+    
+    def get_email_folders(self):
+        return get_lernsax_email_folders(self)

@@ -3,6 +3,7 @@
 
 # Standard library
 import json, time
+from re import sub
 
 # 3rd-party dependencies
 import requests
@@ -95,7 +96,7 @@ def get_lernsax_files(client, login: str, recursive: bool) -> dict:
     results_raw = client.post(
         jsonrpc(
             [
-                [1, "set_session", {"session_id":client.sid}],
+                [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
                 [3, "get_entries", {"folder_id": "", "get_files": 1, "get_folders": 1, "recursive": int(recursive)}]
             ]
@@ -126,7 +127,7 @@ def get_storage_state(client, login: str) -> dict:
     return client.post(
         jsonrpc(
             [
-                [1, "set_session", {"session_id":client.sid}],
+                [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
                 [3, "get_state", {}]
             ]
@@ -140,7 +141,7 @@ def get_lernsax_board(client, login: str) -> dict:
     return client.post(
         jsonrpc(
             [
-                [1, "set_session", {"session_id":client.sid}],
+                [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
                 [3, "get_entries", {}]
             ]
@@ -154,7 +155,7 @@ def get_lernsax_notes(client, login: str) -> dict:
     return client.post(
         jsonrpc(
             [
-                [1, "set_session", {"session_id":client.sid}],
+                [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "notes"}],
                 [3, "get_entries", {}]
             ]
@@ -168,7 +169,7 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
     results_raw = client.post(
         jsonrpc(
             [
-                [1, "set_session", {"session_id":client.sid}],
+                [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "notes"}],
                 [3, "add_entry", {"text": text, "title": title}]
             ]
@@ -187,7 +188,7 @@ def delete_lernsax_note(client, id: int) -> dict:
     results_raw = client.post(
         jsonrpc(
             [
-                [1, "set_session", {"session_id":client.sid}],
+                [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "notes"}],
                 [3, "delete_entry", {"id": id}]
             ]
@@ -198,3 +199,74 @@ def delete_lernsax_note(client, id: int) -> dict:
         return results_raw
     else:
         raise exceptions.NoteError(results_raw[-1])
+
+def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
+    """ Sends an email """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "mailbox"}],
+                [3, "send_mail", {"to": to, "subject": subject, "body_plain": body}]
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        raise exceptions.EmailError(results_raw[-1])
+
+def get_lernsax_emails(client, folder_id: str) -> dict:
+    """ Gets emails from a folder id """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "mailbox"}],
+                [3, "get_messages", {"folder_id": folder_id}]
+            ]
+        )
+    )
+    return results
+
+def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
+    """ reads an email with a certain message id """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "mailbox"}],
+                [3, "read_message", {"folder_id": folder_id, "message_id": message_id}]
+            ]
+        )
+    )
+    try:
+        results = [Box(res) for res in results_raw]
+        if results[1].result["return"]:
+            return results_raw
+    except:
+        raise exceptions.EmailError(results_raw)
+    else:
+        raise exceptions.EmailError(results_raw[-1])
+
+def get_lernsax_email_folders(client):
+    """ returns the folders to get the id """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "mailbox"}],
+                [3, "get_folders", {}]
+            ]
+        )
+    )
+    return results
