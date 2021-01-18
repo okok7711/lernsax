@@ -46,6 +46,9 @@ class Client:
 
     def get_board(self, login):
         return get_lernsax_board(self, login)
+    
+    def add_board_entry(self, login, title, text, color):
+        return add_lernsax_board_entry(self, login, title, text, color)
 
     def add_note(self, title, text):
         return add_lernsax_note(self, title, text)
