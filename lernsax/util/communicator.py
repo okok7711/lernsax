@@ -34,12 +34,13 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
+
     if results[0].result["return"] == "OK":
         client.sid, client.email, client.password, client.member_of = (
             results[1].result.session_id,
             email,
             password,
-            [results[0].result.member[i].login for i in range(len(results[0].result.member))],
+            [member.login for member in results[0].result.member],
         )
         return results_raw
     else:

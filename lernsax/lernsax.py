@@ -3,6 +3,9 @@
 """ LernSucks API Wrapper
 """
 
+# Standard library
+from typing import List
+
 # 3rd-party dependencies
 import requests
 
@@ -16,7 +19,7 @@ class Client:
     email = ""
     password = ""
     sid = ""
-    member_of = []
+    member_of: List[str] = []
     root_url = "https://www.lernsax.de"  # without trailing slash
     api = f"{root_url}/jsonrpc.php"
 
