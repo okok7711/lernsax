@@ -38,15 +38,16 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
     results = [Box(res) for res in results_raw]
     if (
         results[0].result["return"] == "OK"
-    ):  # "return" can't be accessed using attribute (provided by Box) because it is has the same name as the python statement
-        client.sid, client.email, client.password = (
+    ):
+        client.sid, client.email, client.password, client.member_of = (
             results[1].result.session_id,
             email,
             password,
+            [results[0].result.member[i].login for i in range(len(results[0].result.member))]
         )
         return results_raw
     else:
-        if results[0].result.errno == "107":
+        if results[0].result.errno == "107" or results[0].result.errno == "103":
             raise exceptions.AccessDenied(results[0].result)
         elif results[0].result.errno == "9999":
             raise exceptions.ConsequentialError(results[0].result)
@@ -97,6 +98,8 @@ def get_lernsax_tasks(client) -> BeautifulSoup:
         raise exceptions.TaskError()
 
 
+# FileRequest
+
 def get_lernsax_files(client, login: str, recursive: bool) -> dict:
     """ Gets directories via lernsax login email """
     if not client.sid:
@@ -140,6 +143,7 @@ def get_storage_state(client, login: str) -> dict:
         )
     )
 
+# ForumRequest
 
 def get_lernsax_board(client, login: str) -> dict:
     """ Gets messages board for specified login """
@@ -156,8 +160,29 @@ def get_lernsax_board(client, login: str) -> dict:
     )
 
 
+def add_lernsax_board_entry(client, login: str, title: str, text: str, color: str) -> dict:
+    """ adds board entry for specified (group-)login """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"login": login, "object": "board"}],
+                [3, "add_entry", {"title": title, "text": text, "color": color if type(color) == str else hex(color)[2:]}],
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        raise exceptions.BoardError(results_raw[-1])
+
+# NotesRequest
+
 def get_lernsax_notes(client, login: str) -> dict:
-    """ Gets messages board for specified login """
+    """ Gets notes for specified login """
     if not client.sid:
         raise exceptions.NotLoggedIn()
     return client.post(
@@ -210,6 +235,7 @@ def delete_lernsax_note(client, id: int) -> dict:
     else:
         raise exceptions.NoteError(results_raw[-1])
 
+#  EmailRequest
 
 def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
     """ Sends an email """
@@ -284,3 +310,61 @@ def get_lernsax_email_folders(client):
         )
     )
     return results
+
+# MessengerRequest
+
+def read_lernsax_quickmessages(client) -> dict:
+    """ returns quickmessages """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    res = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "messenger"}],
+                [3, "read_quick_messages", {"export_session_file": 0}],
+            ]
+        )
+    )
+    return res
+
+def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
+    """ Sends a quickmessage to an email holder """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "messenger"}],
+                [3, "send_quick_message", {"login": login, "text": text, "import_session_file": 1}],
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        raise exceptions.QuickMessageError(results_raw[-1])
+
+def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
+    """ get quickmessage history """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"object": "messenger"}],
+                [3, "get_history", {"start_id": start_id, "export_session_file": 0}],
+            ]
+        )
+    )
+    results = [Box(res) for res in results_raw]
+    if results[-1].result["return"] == "OK":
+        return results_raw
+    else:
+        if results[-1].result.errno == "107" or results[-1].result.errno == "103":
+            raise exceptions.AccessDenied(results[-1].result)
+        else:
+            raise exceptions.QuickMessageError(results_raw[-1])

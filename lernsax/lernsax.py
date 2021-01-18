@@ -16,6 +16,7 @@ class Client:
     email = ""
     password = ""
     sid = ""
+    member_of = []
     root_url = "https://www.lernsax.de"  # without trailing slash
     api = f"{root_url}/jsonrpc.php"
 
@@ -63,3 +64,12 @@ class Client:
 
     def get_email_folders(self):
         return get_lernsax_email_folders(self)
+
+    def get_quickmessages(self):
+        return read_lernsax_quickmessages(self)
+    
+    def get_quickmessage_history(self):
+        return get_lernsax_quickmessage_history(self)
+
+    def send_quickmessage(self, login, text):
+        return send_lernsax_quickmessage(self, login, text)
