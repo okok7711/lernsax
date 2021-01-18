@@ -377,3 +377,52 @@ def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
             raise exceptions.AccessDenied(results[-1].result)
         else:
             raise exceptions.QuickMessageError(results_raw[-1])
+
+
+def group_lernsax_quickmessage_history_by_chat(quickmsg_history):
+    """Groups LernSax quickmessage history by chat email and date.
+    The returned LernSax quickmessage history only includes a list of all messages. They are not grouped by chat emails yet.
+    This function will group all quickmessages for same chat emails together.
+    In the returned dict the messages associated to a chat are sorted by the date they were sent.
+    """
+    messages = quickmsg_history[-1]["result"]["messages"]
+
+    grouped_messages = Box({})
+    for msg in messages:
+        msg = Box(msg)
+        msg.date = int(msg.date)
+        receiving_chat_email = msg.to.login
+        receiving_chat_name = msg.to.name_hr
+        receiving_chat_type = msg.to.type
+
+        if not receiving_chat_email in grouped_messages:
+            grouped_messages[receiving_chat_email] = {
+                "chat_name": receiving_chat_name,
+                "chat_type": receiving_chat_type,
+                "messages": [],
+            }
+
+        new_message = {
+            "id": msg.id,
+            "text": msg.text,
+            "date": msg.date,
+            "flags": msg.flags,
+        }
+
+        if (
+            len(grouped_messages[receiving_chat_email].messages) == 0
+            or msg.date >= grouped_messages[receiving_chat_email].messages[-1].date
+        ):
+            grouped_messages[receiving_chat_email].messages.append(new_message)
+        else:
+            # By default the messages in the quickmessage history should be sorted by date. If there is a mistake in the sorting
+            # those statements are called.
+            current_index = 0
+            for existing_msg in grouped_messages[receiving_chat_email].messages:
+                if existing_msg.date >= msg.date:
+                    grouped_messages[receiving_chat_email].messages.insert(current_index, new_message)
+                    break
+
+                current_index += 1
+
+    return grouped_messages.to_dict()

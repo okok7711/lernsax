@@ -74,5 +74,8 @@ class Client:
     def get_quickmessage_history(self, start_id):
         return get_lernsax_quickmessage_history(self, start_id)
 
+    def group_quickmessage_history_by_chat(self, quickmsg_history):
+        return group_lernsax_quickmessage_history_by_chat(quickmsg_history)
+
     def send_quickmessage(self, login, text):
         return send_lernsax_quickmessage(self, login, text)
