@@ -159,7 +159,9 @@ def get_lernsax_board(client, login: str) -> dict:
 
 
 def add_lernsax_board_entry(client, login: str, title: str, text: str, color: str) -> dict:
-    """ adds board entry for specified (group-)login """
+    """Adds board entry for specified (group-)login.
+    color must be a hexadecimal color code
+    """
     if not client.sid:
         raise exceptions.NotLoggedIn()
     results_raw = client.post(
@@ -170,7 +172,7 @@ def add_lernsax_board_entry(client, login: str, title: str, text: str, color: st
                 [
                     3,
                     "add_entry",
-                    {"title": title, "text": text, "color": color if type(color) == str else hex(color)[2:]},
+                    {"title": title, "text": text, "color": color},
                 ],
             ]
         )
@@ -220,7 +222,7 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
         raise exceptions.NoteError(results_raw[-1])
 
 
-def delete_lernsax_note(client, id: int) -> dict:
+def delete_lernsax_note(client, id: str) -> dict:
     """ deletes a note """
     if not client.sid:
         raise exceptions.NotLoggedIn()
@@ -243,7 +245,7 @@ def delete_lernsax_note(client, id: int) -> dict:
 #  EmailRequest
 
 
-def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
+def send_lernsax_email(client, to: str, subject: str, body: str) -> dict:
     """ Sends an email """
     if not client.sid:
         raise exceptions.NotLoggedIn()
@@ -380,11 +382,12 @@ def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
             raise exceptions.QuickMessageError(results_raw[-1])
 
 
-def group_lernsax_quickmessage_history_by_chat(quickmsg_history):
+def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
     """Groups LernSax quickmessage history by chat email and date.
     The returned LernSax quickmessage history only includes a list of all messages. They are not grouped by chat emails yet.
     This function will group all quickmessages for same chat emails together.
     In the returned dict the messages associated to a chat are sorted by the date they were sent.
+    Parse the returned data from get_lernsax_quickmessage_history() as quickmsg_history attr.
     """
     messages = quickmsg_history[-1]["result"]["messages"]
 
