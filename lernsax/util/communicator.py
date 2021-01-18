@@ -16,9 +16,7 @@ from . import exceptions
 
 
 def jsonrpc(data: list):
-    return [
-        {"id": k[0], "jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data
-    ]
+    return [{"id": k[0], "jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data]
 
 
 def login_to_lernsax(client, email: str, password: str) -> dict:
@@ -36,14 +34,12 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if (
-        results[0].result["return"] == "OK"
-    ):
+    if results[0].result["return"] == "OK":
         client.sid, client.email, client.password, client.member_of = (
             results[1].result.session_id,
             email,
             password,
-            [results[0].result.member[i].login for i in range(len(results[0].result.member))]
+            [results[0].result.member[i].login for i in range(len(results[0].result.member))],
         )
         return results_raw
     else:
@@ -90,15 +86,14 @@ def get_lernsax_tasks(client) -> BeautifulSoup:
     resHtml = res.text
     try:
         soup = BeautifulSoup(resHtml, "html.parser")
-        tasks = soup.find_all(
-            "a", attrs={"href": "#", "class": "oc", "data-popup": True}
-        )
+        tasks = soup.find_all("a", attrs={"href": "#", "class": "oc", "data-popup": True})
         return tasks
     except:
         raise exceptions.TaskError()
 
 
 # FileRequest
+
 
 def get_lernsax_files(client, login: str, recursive: bool) -> dict:
     """ Gets directories via lernsax login email """
@@ -143,7 +138,9 @@ def get_storage_state(client, login: str) -> dict:
         )
     )
 
+
 # ForumRequest
+
 
 def get_lernsax_board(client, login: str) -> dict:
     """ Gets messages board for specified login """
@@ -169,7 +166,11 @@ def add_lernsax_board_entry(client, login: str, title: str, text: str, color: st
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "board"}],
-                [3, "add_entry", {"title": title, "text": text, "color": color if type(color) == str else hex(color)[2:]}],
+                [
+                    3,
+                    "add_entry",
+                    {"title": title, "text": text, "color": color if type(color) == str else hex(color)[2:]},
+                ],
             ]
         )
     )
@@ -179,7 +180,9 @@ def add_lernsax_board_entry(client, login: str, title: str, text: str, color: st
     else:
         raise exceptions.BoardError(results_raw[-1])
 
+
 # NotesRequest
+
 
 def get_lernsax_notes(client, login: str) -> dict:
     """ Gets notes for specified login """
@@ -235,7 +238,9 @@ def delete_lernsax_note(client, id: int) -> dict:
     else:
         raise exceptions.NoteError(results_raw[-1])
 
+
 #  EmailRequest
+
 
 def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
     """ Sends an email """
@@ -311,7 +316,9 @@ def get_lernsax_email_folders(client):
     )
     return results
 
+
 # MessengerRequest
+
 
 def read_lernsax_quickmessages(client) -> dict:
     """ returns quickmessages """
@@ -328,6 +335,7 @@ def read_lernsax_quickmessages(client) -> dict:
     )
     return res
 
+
 def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
     """ Sends a quickmessage to an email holder """
     if not client.sid:
@@ -337,7 +345,7 @@ def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
             [
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"object": "messenger"}],
-                [3, "send_quick_message", {"login": login, "text": text, "import_session_file": 1}],
+                [3, "send_quick_message", {"login": login, "text": text, "import_session_file": 0}],
             ]
         )
     )
@@ -346,6 +354,7 @@ def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
         return results_raw
     else:
         raise exceptions.QuickMessageError(results_raw[-1])
+
 
 def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
     """ get quickmessage history """

@@ -46,7 +46,7 @@ class Client:
 
     def get_board(self, login):
         return get_lernsax_board(self, login)
-    
+
     def add_board_entry(self, login, title, text, color):
         return add_lernsax_board_entry(self, login, title, text, color)
 
@@ -70,9 +70,9 @@ class Client:
 
     def get_quickmessages(self):
         return read_lernsax_quickmessages(self)
-    
-    def get_quickmessage_history(self):
-        return get_lernsax_quickmessage_history(self)
+
+    def get_quickmessage_history(self, start_id):
+        return get_lernsax_quickmessage_history(self, start_id)
 
     def send_quickmessage(self, login, text):
         return send_lernsax_quickmessage(self, login, text)
