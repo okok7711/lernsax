@@ -34,12 +34,13 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
+
     if results[0].result["return"] == "OK":
         client.sid, client.email, client.password, client.member_of = (
             results[1].result.session_id,
             email,
             password,
-            [results[0].result.member[i].login for i in range(len(results[0].result.member))],
+            [member.login for member in results[0].result.member],
         )
         return results_raw
     else:
@@ -158,7 +159,9 @@ def get_lernsax_board(client, login: str) -> dict:
 
 
 def add_lernsax_board_entry(client, login: str, title: str, text: str, color: str) -> dict:
-    """ adds board entry for specified (group-)login """
+    """Adds board entry for specified (group-)login.
+    color must be a hexadecimal color code
+    """
     if not client.sid:
         raise exceptions.NotLoggedIn()
     results_raw = client.post(
@@ -169,7 +172,7 @@ def add_lernsax_board_entry(client, login: str, title: str, text: str, color: st
                 [
                     3,
                     "add_entry",
-                    {"title": title, "text": text, "color": color if type(color) == str else hex(color)[2:]},
+                    {"title": title, "text": text, "color": color},
                 ],
             ]
         )
@@ -219,7 +222,7 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
         raise exceptions.NoteError(results_raw[-1])
 
 
-def delete_lernsax_note(client, id: int) -> dict:
+def delete_lernsax_note(client, id: str) -> dict:
     """ deletes a note """
     if not client.sid:
         raise exceptions.NotLoggedIn()
@@ -242,7 +245,7 @@ def delete_lernsax_note(client, id: int) -> dict:
 #  EmailRequest
 
 
-def send_lernsax_email(client, body: str, to: str, subject: str) -> dict:
+def send_lernsax_email(client, to: str, subject: str, body: str) -> dict:
     """ Sends an email """
     if not client.sid:
         raise exceptions.NotLoggedIn()
@@ -377,3 +380,53 @@ def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
             raise exceptions.AccessDenied(results[-1].result)
         else:
             raise exceptions.QuickMessageError(results_raw[-1])
+
+
+def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
+    """Groups LernSax quickmessage history by chat email and date.
+    The returned LernSax quickmessage history only includes a list of all messages. They are not grouped by chat emails yet.
+    This function will group all quickmessages for same chat emails together.
+    In the returned dict the messages associated to a chat are sorted by the date they were sent.
+    Parse the returned data from get_lernsax_quickmessage_history() as quickmsg_history attr.
+    """
+    messages = quickmsg_history[-1]["result"]["messages"]
+
+    grouped_messages = Box({})
+    for msg in messages:
+        msg = Box(msg)
+        msg.date = int(msg.date)
+        receiving_chat_email = msg.to.login
+        receiving_chat_name = msg.to.name_hr
+        receiving_chat_type = msg.to.type
+
+        if not receiving_chat_email in grouped_messages:
+            grouped_messages[receiving_chat_email] = {
+                "chat_name": receiving_chat_name,
+                "chat_type": receiving_chat_type,
+                "messages": [],
+            }
+
+        new_message = {
+            "id": msg.id,
+            "text": msg.text,
+            "date": msg.date,
+            "flags": msg.flags,
+        }
+
+        if (
+            len(grouped_messages[receiving_chat_email].messages) == 0
+            or msg.date >= grouped_messages[receiving_chat_email].messages[-1].date
+        ):
+            grouped_messages[receiving_chat_email].messages.append(new_message)
+        else:
+            # By default the messages in the quickmessage history should be sorted by date. If there is a mistake in the sorting
+            # those statements are called.
+            current_index = 0
+            for existing_msg in grouped_messages[receiving_chat_email].messages:
+                if existing_msg.date >= msg.date:
+                    grouped_messages[receiving_chat_email].messages.insert(current_index, new_message)
+                    break
+
+                current_index += 1
+
+    return grouped_messages.to_dict()
