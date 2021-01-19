@@ -15,6 +15,14 @@ from bs4 import BeautifulSoup
 from . import exceptions
 
 
+def pack_responses(results: list, main_answer_index: int) -> dict:
+    """Packs multiple method responses together.
+    The main response is accessible through the "result" key.
+    Helper method responses are accessible through the "helpers" key of the returned dict."""
+    packed_results = Box({"result": results.pop(main_answer_index), "helpers": results})
+    return packed_results.to_dict()
+
+
 def jsonrpc(data: list):
     return [{"id": k[0], "jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data]
 
@@ -35,15 +43,7 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
     )
     results = [Box(res) for res in results_raw]
 
-    if results[0].result["return"] == "OK":
-        client.sid, client.email, client.password, client.member_of = (
-            results[1].result.session_id,
-            email,
-            password,
-            [member.login for member in results[0].result.member],
-        )
-        return results_raw
-    else:
+    if not results[0].result["return"] == "OK":
         if results[0].result.errno == "107" or results[0].result.errno == "103":
             raise exceptions.AccessDenied(results[0].result)
         elif results[0].result.errno == "9999":
@@ -51,12 +51,21 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
         else:
             raise exceptions.LoginError(results[0].result)
 
+    client.sid, client.email, client.password, client.member_of = (
+        results[1].result.session_id,
+        email,
+        password,
+        [member.login for member in results[0].result.member],
+    )
+    return pack_responses(results_raw, 0)
+
 
 def refresh_lernsax_session(client) -> dict:
     """ Refreshes current LernSax session. """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    return client.post(jsonrpc([[1, "set_session", {"session_id": client.sid}]]))
+    results_raw = client.post(jsonrpc([[1, "set_session", {"session_id": client.sid}]]))
+    return pack_responses(results_raw, 0)
 
 
 def logout_from_lernsax(client) -> dict:
@@ -71,11 +80,11 @@ def logout_from_lernsax(client) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        client.sid = ""
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.LogoutError(results[-1].result)
+
+    client.sid = ""
+    return pack_responses(results_raw, 2)
 
 
 def get_lernsax_tasks(client) -> BeautifulSoup:
@@ -119,17 +128,16 @@ def get_lernsax_files(client, login: str, recursive: bool) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.FileError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 def get_storage_state(client, login: str) -> dict:
     """ Gets amount of used storage and free storage """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    return client.post(
+    results_raw = client.post(
         jsonrpc(
             [
                 [1, "set_session", {"session_id": client.sid}],
@@ -138,6 +146,7 @@ def get_storage_state(client, login: str) -> dict:
             ]
         )
     )
+    return pack_responses(results_raw, 2)
 
 
 # ForumRequest
@@ -147,7 +156,7 @@ def get_lernsax_board(client, login: str) -> dict:
     """ Gets messages board for specified login """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    return client.post(
+    results_raw = client.post(
         jsonrpc(
             [
                 [1, "set_session", {"session_id": client.sid}],
@@ -156,6 +165,7 @@ def get_lernsax_board(client, login: str) -> dict:
             ]
         )
     )
+    return pack_responses(results_raw, 2)
 
 
 def add_lernsax_board_entry(client, login: str, title: str, text: str, color: str) -> dict:
@@ -178,10 +188,9 @@ def add_lernsax_board_entry(client, login: str, title: str, text: str, color: st
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.BoardError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 # NotesRequest
@@ -191,7 +200,7 @@ def get_lernsax_notes(client, login: str) -> dict:
     """ Gets notes for specified login """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    return client.post(
+    results_raw = client.post(
         jsonrpc(
             [
                 [1, "set_session", {"session_id": client.sid}],
@@ -200,6 +209,7 @@ def get_lernsax_notes(client, login: str) -> dict:
             ]
         )
     )
+    return pack_responses(results_raw, 2)
 
 
 def add_lernsax_note(client, title: str, text: str) -> dict:
@@ -216,10 +226,9 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.NoteError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 def delete_lernsax_note(client, id: str) -> dict:
@@ -236,10 +245,9 @@ def delete_lernsax_note(client, id: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.NoteError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 #  EmailRequest
@@ -259,17 +267,16 @@ def send_lernsax_email(client, to: str, subject: str, body: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.EmailError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 def get_lernsax_emails(client, folder_id: str) -> dict:
     """ Gets emails from a folder id """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    results = client.post(
+    results_raw = client.post(
         jsonrpc(
             [
                 [1, "set_session", {"session_id": client.sid}],
@@ -278,7 +285,7 @@ def get_lernsax_emails(client, folder_id: str) -> dict:
             ]
         )
     )
-    return results
+    return pack_responses(results_raw, 2)
 
 
 def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
@@ -294,21 +301,17 @@ def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
             ]
         )
     )
-    try:
-        results = [Box(res) for res in results_raw]
-        if results[1].result["return"]:
-            return results_raw
-    except:
-        raise exceptions.EmailError(results_raw)
-    else:
+    results = [Box(res) for res in results_raw]
+    if not results[-1].result["return"] == "OK":
         raise exceptions.EmailError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 def get_lernsax_email_folders(client):
     """ returns the folders to get the id """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    results = client.post(
+    results_raw = client.post(
         jsonrpc(
             [
                 [1, "set_session", {"session_id": client.sid}],
@@ -317,7 +320,8 @@ def get_lernsax_email_folders(client):
             ]
         )
     )
-    return results
+
+    return pack_responses(results_raw, 2)
 
 
 # MessengerRequest
@@ -327,7 +331,7 @@ def read_lernsax_quickmessages(client) -> dict:
     """ returns quickmessages """
     if not client.sid:
         raise exceptions.NotLoggedIn()
-    res = client.post(
+    results_raw = client.post(
         jsonrpc(
             [
                 [1, "set_session", {"session_id": client.sid}],
@@ -336,7 +340,7 @@ def read_lernsax_quickmessages(client) -> dict:
             ]
         )
     )
-    return res
+    return pack_responses(results_raw, 2)
 
 
 def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
@@ -353,10 +357,9 @@ def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         raise exceptions.QuickMessageError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
@@ -373,13 +376,12 @@ def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if results[-1].result["return"] == "OK":
-        return results_raw
-    else:
+    if not results[-1].result["return"] == "OK":
         if results[-1].result.errno == "107" or results[-1].result.errno == "103":
             raise exceptions.AccessDenied(results[-1].result)
         else:
             raise exceptions.QuickMessageError(results_raw[-1])
+    return pack_responses(results_raw, 2)
 
 
 def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
@@ -389,7 +391,7 @@ def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
     In the returned dict the messages associated to a chat are sorted by the date they were sent.
     Parse the returned data from get_lernsax_quickmessage_history() as quickmsg_history attr.
     """
-    messages = quickmsg_history[-1]["result"]["messages"]
+    messages = quickmsg_history["result"]["result"]["messages"]
 
     grouped_messages = Box({})
     for msg in messages:
