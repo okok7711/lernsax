@@ -44,12 +44,7 @@ def login_to_lernsax(client, email: str, password: str) -> dict:
     results = [Box(res) for res in results_raw]
 
     if not results[0].result["return"] == "OK":
-        if results[0].result.errno == "107" or results[0].result.errno == "103":
-            raise exceptions.AccessDenied(results[0].result)
-        elif results[0].result.errno == "9999":
-            raise exceptions.ConsequentialError(results[0].result)
-        else:
-            raise exceptions.LoginError(results[0].result)
+        raise exceptions.error_handler(results[0].result.errno)(results_raw[0]["result"])
 
     client.sid, client.email, client.password, client.member_of = (
         results[1].result.session_id,
@@ -81,8 +76,7 @@ def logout_from_lernsax(client) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.LogoutError(results[-1].result)
-
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     client.sid = ""
     return pack_responses(results_raw, 2)
 
@@ -98,8 +92,8 @@ def get_lernsax_tasks(client) -> BeautifulSoup:
         soup = BeautifulSoup(resHtml, "html.parser")
         tasks = soup.find_all("a", attrs={"href": "#", "class": "oc", "data-popup": True})
         return tasks
-    except:
-        raise exceptions.TaskError()
+    except Exception as E:
+        raise E()
 
 
 # FileRequest
@@ -129,7 +123,7 @@ def get_lernsax_files(client, login: str, recursive: bool) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.FileError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -189,7 +183,7 @@ def add_lernsax_board_entry(client, login: str, title: str, text: str, color: st
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.BoardError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -227,7 +221,7 @@ def add_lernsax_note(client, title: str, text: str) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.NoteError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -246,7 +240,7 @@ def delete_lernsax_note(client, id: str) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.NoteError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -268,7 +262,7 @@ def send_lernsax_email(client, to: str, subject: str, body: str) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.EmailError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -303,7 +297,7 @@ def read_lernsax_email(client, folder_id: str, message_id: int) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.EmailError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1])["result"]
     return pack_responses(results_raw, 2)
 
 
@@ -358,7 +352,7 @@ def send_lernsax_quickmessage(client, login: str, text: str) -> dict:
     )
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
-        raise exceptions.QuickMessageError(results_raw[-1])
+        raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -378,9 +372,7 @@ def get_lernsax_quickmessage_history(client, start_id: int) -> dict:
     results = [Box(res) for res in results_raw]
     if not results[-1].result["return"] == "OK":
         if results[-1].result.errno == "107" or results[-1].result.errno == "103":
-            raise exceptions.AccessDenied(results[-1].result)
-        else:
-            raise exceptions.QuickMessageError(results_raw[-1])
+            raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
 
@@ -392,7 +384,6 @@ def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
     Parse the returned data from get_lernsax_quickmessage_history() as quickmsg_history attr.
     """
     messages = quickmsg_history["result"]["result"]["messages"]
-
     grouped_messages = Box({})
     for msg in messages:
         msg = Box(msg)
@@ -400,21 +391,18 @@ def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
         receiving_chat_email = msg.to.login
         receiving_chat_name = msg.to.name_hr
         receiving_chat_type = msg.to.type
-
         if not receiving_chat_email in grouped_messages:
             grouped_messages[receiving_chat_email] = {
                 "chat_name": receiving_chat_name,
                 "chat_type": receiving_chat_type,
                 "messages": [],
             }
-
         new_message = {
             "id": msg.id,
             "text": msg.text,
             "date": msg.date,
             "flags": msg.flags,
         }
-
         if (
             len(grouped_messages[receiving_chat_email].messages) == 0
             or msg.date >= grouped_messages[receiving_chat_email].messages[-1].date
@@ -430,5 +418,4 @@ def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
                     break
 
                 current_index += 1
-
     return grouped_messages.to_dict()
