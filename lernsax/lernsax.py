@@ -40,6 +40,12 @@ class Client:
 
     def get_files(self, login: str, recursive: bool) -> dict:
         return get_lernsax_files(self, login, recursive)
+    
+    def get_download_url(self, login: str, id: str) -> dict:
+        return get_dl_url(self, login, id)
+
+    def edit_file(self, login: str, id: str, description: str, name: str = None) -> dict:
+        return set_file(self, login, id, description, name)
 
     def get_tasks(self) -> dict:
         return get_lernsax_tasks(self)

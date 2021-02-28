@@ -3,7 +3,7 @@
 
 # Standard library
 import json, time
-from re import sub
+import re
 
 # 3rd-party dependencies
 import requests
@@ -122,7 +122,8 @@ def get_lernsax_files(client, login: str, recursive: bool) -> dict:
         )
     )
     results = [Box(res) for res in results_raw]
-    if not results[-1].result["return"] == "OK":
+    if not results[-1].result["return"] in ["OK", "RESUME"]:
+        print(results_raw[-1]["result"])
         raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
     return pack_responses(results_raw, 2)
 
@@ -137,6 +138,39 @@ def get_storage_state(client, login: str) -> dict:
                 [1, "set_session", {"session_id": client.sid}],
                 [2, "set_focus", {"login": login, "object": "files"}],
                 [3, "get_state", {}],
+            ]
+        )
+    )
+    return pack_responses(results_raw, 2)
+
+
+def get_dl_url(client, login: str, id: str) -> dict:
+    """ Gets download id with the file id """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"login": login, "object": "files"}],
+                [3, "get_file_download_url", {"id": id}],
+            ]
+        )
+    )
+    return pack_responses(results_raw, 2)
+
+
+def set_file(client, login: str, id: str, description: str, name: str = None) -> dict:
+    """ Gets download id with the file id """
+    if not client.sid:
+        raise exceptions.NotLoggedIn()
+    if not name: name = id[:id.rfind("," + 1)]
+    results_raw = client.post(
+        jsonrpc(
+            [
+                [1, "set_session", {"session_id": client.sid}],
+                [2, "set_focus", {"login": login, "object": "files"}],
+                [3, "set_file", {"id": id, "folder_id": id[:id.rfind("/")], "name": name, "description": description}],
             ]
         )
     )

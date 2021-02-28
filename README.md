@@ -1,6 +1,5 @@
 # lernsax
-API Wrapper von unserer lieblings Lernplattform durch die jsonrpc und das scrapen von den php Dateien.
-
+API Wrapper von LernSax durch das imitieren der Anfragen aus der App und durch scrapen der Website.
 
 ## Dokumentation
 tbd
