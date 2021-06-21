@@ -30,7 +30,7 @@ class UnkownError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
-def error_handler(errno) -> Exception:
+def error_handler(errno: str) -> Exception:
     err_dict = {
         "107": AccessDenied,
         "103": AccessDenied,

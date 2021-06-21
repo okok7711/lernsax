@@ -1,2 +1,2 @@
 from .exceptions import *
-from .communicator import *
+from .client import * 
