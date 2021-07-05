@@ -4,8 +4,8 @@
 """
 
 # Standard library
-from lernsax.util import client
-from typing import List
+from lernsax.util import ApiClient
+from typing import List, Union
 
 # 3rd-party dependencies
 import aiohttp
@@ -13,19 +13,19 @@ import asyncio
 
 # Package modules
 
-class Client(client.ApiClient):
+class Client(ApiClient):
     """ Main object for handling LernSax access and responses. """
-    def __init__(self, email: str, password: str):
-        self.email = email
-        self.password = password
-        self.sid = ""
+    def __init__(self, email: str, password: str) -> None:
+        self.email: str = email
+        self.password: str = password
+        self.sid: str = ""
         self.member_of: List[str] = []
-        self.root_url = "https://www.lernsax.de"
-        self.api = f"{self.root_url}/jsonrpc.php"
+        self.root_url: str = "https://www.lernsax.de"
+        self.api: str = f"{self.root_url}/jsonrpc.php"
     def __await__(self):
         return self._init().__await__()
     async def _init(self):
-        self._session = aiohttp.ClientSession()
+        self._session: aiohttp.ClientSession = aiohttp.ClientSession()
         return self
     def __del__(self):
         try:
@@ -37,6 +37,6 @@ class Client(client.ApiClient):
     async def _close_session(self):
         if not self._session.closed:
             await self._session.close()
-    async def post(self, json) -> dict:
+    async def post(self, json: Union[dict, str, list]) -> dict:
         async with self._session.post(self.api, json=json) as f:
             return await f.json()
