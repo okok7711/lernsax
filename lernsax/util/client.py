@@ -82,7 +82,7 @@ class ApiClient(ABC):
         return self.pack_responses(results_raw, 2)
 
 
-    async def get_tasks(self) -> BeautifulSoup:
+    async def get_tasks(self, group: str) -> BeautifulSoup:
         """ Get LernSax tasks, thanks to  TKFRvisionOfficial for finding the json rpc request """
         if not self.sid:
             raise exceptions.NotLoggedIn()
@@ -90,7 +90,7 @@ class ApiClient(ABC):
             self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
-                    [2, "set_focus", {"login": self.email, "object": "tasks"}],
+                    [2, "set_focus", {"login": group, "object": "tasks"}],
                     [3, "get_entries", {}],
                 ]
             )
