@@ -4,8 +4,8 @@
 """
 
 # Standard library
-from lernsax.util import client
-from typing import List
+from lernsax.util import ApiClient
+from typing import List, Union
 
 # 3rd-party dependencies
 import aiohttp
@@ -13,19 +13,21 @@ import asyncio
 
 # Package modules
 
-class Client(client.ApiClient):
+class Client(ApiClient):
     """ Main object for handling LernSax access and responses. """
-    def __init__(self, email: str, password: str):
-        self.email = email
-        self.password = password
-        self.sid = ""
+    def __init__(self, email: str, password: str) -> None:
+        self.email: str = email
+        self.password: str = password
+        self.sid: str = ""
         self.member_of: List[str] = []
-        self.root_url = "https://www.lernsax.de"
-        self.api = f"{self.root_url}/jsonrpc.php"
+        self.root_url: str = "https://www.lernsax.de"
+        self.api: str = f"{self.root_url}/jsonrpc.php"
+        self.background: asyncio.Task
     def __await__(self):
+        self.background = asyncio.create_task(self.background_task)
         return self._init().__await__()
     async def _init(self):
-        self._session = aiohttp.ClientSession()
+        self._session: aiohttp.ClientSession = aiohttp.ClientSession()
         return self
     def __del__(self):
         try:
@@ -37,6 +39,10 @@ class Client(client.ApiClient):
     async def _close_session(self):
         if not self._session.closed:
             await self._session.close()
-    async def post(self, json) -> dict:
+    async def post(self, json: Union[dict, str, list]) -> dict:
         async with self._session.post(self.api, json=json) as f:
             return await f.json()
+    async def background_task(self) -> None:
+        # refresh session every 5 minutes
+        await asyncio.sleep(60*5)
+        print(self.refresh_session())
