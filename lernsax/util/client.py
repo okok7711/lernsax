@@ -8,28 +8,30 @@ import re
 # 3rd-party dependencies
 import requests
 
-from box import Box
 from bs4 import BeautifulSoup
+from box import Box
+from abc import ABC
 
 # Package modules
 from . import exceptions
 
-
-class ApiClient:
-    async def pack_responses(self, results: list, main_answer_index: int) -> dict:
+# Abstract ApiClient only as a skeleton
+class ApiClient(ABC):
+    def pack_responses(self, results: list, main_answer_index: int) -> dict:
         """Packs multiple method responses together.
         The main response is accessible through the "result" key.
         Helper method responses are accessible through the "helpers" key of the returned dict."""
         packed_results = Box({"result": results.pop(main_answer_index), "helpers": results})
         return packed_results.to_dict()
 
-    async def jsonrpc(self, data: list):
-        return [{"id": k[0], "await self.jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data]
+    def jsonrpc(self, data: list):
+        return [{"id": k[0], "jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data]
 
-    async def login(self, email: str, password: str) -> dict:
+    async def login(self, email: str = "", password: str = "") -> dict:
         """ Enter the LernSax session """
+        if not email or not password: email, password = self.email, self.password
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [
                         1,
@@ -51,21 +53,21 @@ class ApiClient:
             password,
             [member.login for member in results[0].result.member],
         )
-        return await self.pack_responses(results_raw, 0)
+        return self.pack_responses(results_raw, 0)
 
 
     async def refresh_session(self) -> dict:
         """ Refreshes current LernSax session. """
         if not self.sid:
             raise exceptions.NotLoggedIn()
-        results_raw = await self.post(await self.jsonrpc([[1, "set_session", {"session_id": self.sid}]]))
-        return await self.pack_responses(results_raw, 0)
+        results_raw = await self.post(self.jsonrpc([[1, "set_session", {"session_id": self.sid}]]))
+        return self.pack_responses(results_raw, 0)
 
 
     async def logout(self) -> dict:
         """ Exit the LernSax session """
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "settings"}],
@@ -77,22 +79,23 @@ class ApiClient:
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
         self.sid = ""
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def get_tasks(self) -> BeautifulSoup:
-        """ Get LernSax tasks """
+        """ Get LernSax tasks, thanks to  TKFRvisionOfficial for finding the json rpc request """
         if not self.sid:
             raise exceptions.NotLoggedIn()
-        url = f"{self.root_url}/wws/105500.php?sid={self.sid}"
-        res = requests.get(url, allow_redirects=True)
-        resHtml = res.text
-        try:
-            soup = BeautifulSoup(resHtml, "html.parser")
-            tasks = soup.find_all("a", attrs={"href": "#", "class": "oc", "data-popup": True})
-            return tasks
-        except Exception as E:
-            raise E()
+        results_raw = await self.post(
+            self.jsonrpc(
+                [
+                    [1, "set_session", {"session_id": self.sid}],
+                    [2, "set_focus", {"login": self.email, "object": "tasks"}],
+                    [3, "get_entries", {}],
+                ]
+            )
+        )
+        return self.pack_responses(results_raw, 2)
 
 
     # FileRequest
@@ -103,7 +106,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "files"}],
@@ -124,7 +127,7 @@ class ApiClient:
         if not results[-1].result["return"] in ["OK", "RESUME"]:
             print(results_raw[-1]["result"])
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def get_state(self, login: str) -> dict:
@@ -132,7 +135,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "files"}],
@@ -140,7 +143,7 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def get_download_url(self, login: str, id: str) -> dict:
@@ -148,7 +151,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "files"}],
@@ -156,16 +159,16 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def edit_file(self, login: str, id: str, description: str, name: str = None) -> dict:
         """ Edits a File's description and or name """
         if not self.sid:
             raise exceptions.NotLoggedIn()
-        if not name: name = id[:id.rfind("," + 1)]
+        if not name: name = id[:id.rfind(",") + 1]
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "files"}],
@@ -173,7 +176,7 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     # ForumRequest
@@ -184,7 +187,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "files"}],
@@ -192,7 +195,7 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def add_board_entry(self, login: str, title: str, text: str, color: str) -> dict:
@@ -202,7 +205,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "board"}],
@@ -217,7 +220,7 @@ class ApiClient:
         results = [Box(res) for res in results_raw]
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     # NotesRequest
@@ -228,7 +231,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "notes"}],
@@ -236,7 +239,7 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def add_note(self, title: str, text: str) -> dict:
@@ -244,7 +247,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "notes"}],
@@ -255,7 +258,7 @@ class ApiClient:
         results = [Box(res) for res in results_raw]
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def delete_note(self, id: str) -> dict:
@@ -263,7 +266,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "notes"}],
@@ -274,7 +277,7 @@ class ApiClient:
         results = [Box(res) for res in results_raw]
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     #  EmailRequest
@@ -285,7 +288,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "mailbox"}],
@@ -296,7 +299,7 @@ class ApiClient:
         results = [Box(res) for res in results_raw]
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def get_emails(self, folder_id: str) -> dict:
@@ -304,7 +307,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "mailbox"}],
@@ -312,7 +315,7 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def read_email(self, folder_id: str, message_id: int) -> dict:
@@ -320,7 +323,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "mailbox"}],
@@ -331,7 +334,7 @@ class ApiClient:
         results = [Box(res) for res in results_raw]
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1])["result"]
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def get_email_folders(self):
@@ -339,7 +342,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "mailbox"}],
@@ -348,7 +351,7 @@ class ApiClient:
             )
         )
 
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     # MessengerRequest
@@ -359,7 +362,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "messenger"}],
@@ -367,7 +370,7 @@ class ApiClient:
                 ]
             )
         )
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def send_quickmessage(self, login: str, text: str) -> dict:
@@ -375,7 +378,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "messenger"}],
@@ -386,7 +389,7 @@ class ApiClient:
         results = [Box(res) for res in results_raw]
         if not results[-1].result["return"] == "OK":
             raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
     async def get_quickmessage_history(self, start_id: int) -> dict:
@@ -394,7 +397,7 @@ class ApiClient:
         if not self.sid:
             raise exceptions.NotLoggedIn()
         results_raw = await self.post(
-            await self.jsonrpc(
+            self.jsonrpc(
                 [
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"object": "messenger"}],
@@ -403,13 +406,12 @@ class ApiClient:
             )
         )
         results = [Box(res) for res in results_raw]
-        if not results[-1].result["return"] == "OK":
-            if results[-1].result.errno == "107" or results[-1].result.errno == "103":
+        if (not results[-1].result["return"] == "OK") and (results[-1].result.errno == "107" or results[-1].result.errno == "103"):
                 raise exceptions.error_handler(results[-1].result.errno)(results_raw[-1]["result"])
-        return await self.pack_responses(results_raw, 2)
+        return self.pack_responses(results_raw, 2)
 
 
-    async def group_lernsax_quickmessage_history_by_chat(quickmsg_history: list):
+    async def group_lernsax_quickmessage_history_by_chat(self, quickmsg_history: list):
         """Groups LernSax quickmessage history by chat email and date.
         The returned LernSax quickmessage history only includes a list of all messages. They are not grouped by chat emails yet.
         This function will group all quickmessages for same chat emails together.
