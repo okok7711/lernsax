@@ -24,7 +24,7 @@ class Client(ApiClient):
         self.api: str = f"{self.root_url}/jsonrpc.php"
         self.background: asyncio.Task
     def __await__(self):
-        self.background = asyncio.create_task(self.background_task)
+        self.background = asyncio.create_task(self.background_task())
         return self._init().__await__()
     async def _init(self):
         self._session: aiohttp.ClientSession = aiohttp.ClientSession()
