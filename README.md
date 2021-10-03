@@ -26,6 +26,7 @@ asyncio.get_event_loop().run_until_complete(main())
 
 ## Accessing Files via WebDav
 Use aiodav for async webdav access to LernSax, please refer to [this repo](https://github.com/jorgeajimenezl/aiodav) for more info on aiodav
+
 ```
 import aiodav
 import asyncio
@@ -36,11 +37,3 @@ async def main():
                                     '/local/file.zip',
                                     progress=progress)
 ```
-
-client = lernsax.Client()
-client.login("realmail@lernsax.de", "gutePass")
-print(client.get_emails("494e424f58"))
-```
-
-## WebDAV?
-Instead of maintaining the sync version of LernSax.py I will focus on completing the async branch which will have WebDAV access to implement a nicer way to read-/write files
