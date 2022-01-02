@@ -4,7 +4,7 @@ Communicator code to talk with LernSax.de
 
 from abc import ABC
 from box import Box
-from bs4 import BeautifulSoup
+from bs4 import 
 from . import exceptions
 
 # Abstract ApiClient only as a skeleton
@@ -80,7 +80,7 @@ class ApiClient(ABC):
         self.sid = ""
         return self.pack_responses(results_raw, 2)
 
-    async def get_tasks(self, group: str) -> BeautifulSoup:
+    async def get_tasks(self, group: str) -> dict:
         """ Get LernSax tasks, thanks to  TKFRvisionOfficial for finding the json rpc request """
         if not self.sid:
             raise exceptions.NotLoggedIn()
