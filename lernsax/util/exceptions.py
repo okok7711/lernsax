@@ -2,33 +2,41 @@ class ConsequentialError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class NotLoggedIn(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class AccessDenied(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class InvalidSession(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class MailError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class FolderNotFound(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 class EntryNotFound(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
 
+
 class UnkownError(Exception):
     def __init__(*args, **kwargs):
         Exception.__init__(*args, **kwargs)
+
 
 def error_handler(errno: str) -> Exception:
     err_dict = {
@@ -39,6 +47,8 @@ def error_handler(errno: str) -> Exception:
         "247": FolderNotFound,
         "117": EntryNotFound,
         "9999": ConsequentialError
-        }
-    if errno in err_dict: return err_dict[errno]
-    else: return UnkownError
+    }
+    if errno in err_dict:
+        return err_dict[errno]
+    else:
+        return UnkownError

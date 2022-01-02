@@ -3,15 +3,10 @@
 """ LernSucks API Wrapper
 """
 
-# Standard library
-from lernsax.util import ApiClient
-from typing import List, Union
-
-# 3rd-party dependencies
-import aiohttp
 import asyncio
-
-# Package modules
+from typing import List, Union
+import aiohttp
+from lernsax.util import ApiClient
 
 class Client(ApiClient):
     """ Main object for handling LernSax access and responses. """
@@ -44,5 +39,6 @@ class Client(ApiClient):
             return await f.json()
     async def background_task(self) -> None:
         # refresh session every 5 minutes
-        await asyncio.sleep(60*5)
-        print(self.refresh_session())
+        while True:
+            await asyncio.sleep(60*5)
+            print(await self.refresh_session())
