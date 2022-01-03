@@ -7,6 +7,7 @@ import asyncio
 from typing import List, Union
 import aiohttp
 from lernsax.util import ApiClient
+import atexit
 
 class Client(ApiClient):
     """ Main object for handling LernSax access and responses. """
@@ -20,6 +21,7 @@ class Client(ApiClient):
         self.background: asyncio.Task
     def __await__(self):
         self.background = asyncio.create_task(self.background_task())
+        atexit.register(self.__del__)
         return self._init().__await__()
     async def _init(self):
         self._session: aiohttp.ClientSession = aiohttp.ClientSession()
