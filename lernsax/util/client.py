@@ -4,7 +4,6 @@ Communicator code to talk with LernSax.de
 
 from abc import ABC
 from box import Box
-from bs4 import 
 from . import exceptions
 
 # Abstract ApiClient only as a skeleton
