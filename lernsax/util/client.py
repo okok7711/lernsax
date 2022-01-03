@@ -21,6 +21,9 @@ class ApiClient(ABC):
         return packed_results.to_dict()
 
     def jsonrpc(self, data: list):
+        """
+        Prepares Data to be sent to the API in correct jsonrpc format
+        """
         return [{"id": k[0], "jsonrpc": "2.0", "method": k[1], "params": k[2]} for k in data]
 
     async def login(self, email: str = "", password: str = "") -> dict:

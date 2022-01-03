@@ -39,6 +39,9 @@ class UnkownError(Exception):
 
 
 def error_handler(errno: str) -> Exception:
+    """
+    returns an Exception for the given error code
+    """
     err_dict = {
         "107": AccessDenied,
         "103": AccessDenied,
