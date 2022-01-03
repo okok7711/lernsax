@@ -6,7 +6,8 @@ This is an API Wrapper for the LernSax API using aiohttp. Please note that we do
 
 
 ## Documentation?
-There is no documentation just yet. However I would refer you to [this repo](https://github.com/TKFRvisionOfficial/lernsax-webweaver-api-research) for getting a hang of the API.
+Basic Documentation, generated with pdoc, for this module is available [here](https://okok7711.github.io/lernsax/)
+For Documentation of the actual LernSax jsonrpc API you should probably still stick to  [this repo](https://github.com/TKFRvisionOfficial/lernsax-webweaver-api-research)
 
 ## Example Usage
 ```
