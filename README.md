@@ -4,6 +4,12 @@
 
 This is an API Wrapper for the LernSax API using aiohttp. Please note that we do not encourage taking any harmful actions against anyone using this wrapper.
 
+## Installation
+LernSax is available on pip!
+`pip install lernsax`
+You can also install directly from the repo via
+`python -m pip install git+https://github.com/okok7711/lernsax.git`
+
 
 ## Documentation?
 Basic Documentation, generated with pdoc, for this module is available [here](https://okok7711.github.io/lernsax/)
