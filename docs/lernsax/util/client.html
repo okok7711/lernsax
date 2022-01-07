@@ -55,16 +55,7 @@
                                 <a class="function" href="#ApiClient.get_tasks">get_tasks</a>
                         </li>
                         <li>
-                                <a class="function" href="#ApiClient.get_files">get_files</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#ApiClient.get_state">get_state</a>
-                        </li>
-                        <li>
                                 <a class="function" href="#ApiClient.get_download_url">get_download_url</a>
-                        </li>
-                        <li>
-                                <a class="function" href="#ApiClient.edit_file">edit_file</a>
                         </li>
                         <li>
                                 <a class="function" href="#ApiClient.get_board">get_board</a>
@@ -230,50 +221,6 @@
 
     <span class="c1"># FileRequest</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Gets directories via lernsax login email &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span>
-                        <span class="mi">3</span><span class="p">,</span>
-                        <span class="s2">&quot;get_entries&quot;</span><span class="p">,</span>
-                        <span class="p">{</span>
-                            <span class="s2">&quot;folder_id&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                            <span class="s2">&quot;get_files&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                            <span class="s2">&quot;get_folders&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                            <span class="s2">&quot;recursive&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">recursive</span><span class="p">),</span>
-                        <span class="p">},</span>
-                    <span class="p">],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">Box</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results_raw</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;return&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;OK&quot;</span><span class="p">,</span> <span class="s2">&quot;RESUME&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">results_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;result&quot;</span><span class="p">])</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">error_handler</span><span class="p">(</span>
-                <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">errno</span><span class="p">)(</span><span class="n">results_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;result&quot;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Gets amount of used storage and free storage &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;get_state&quot;</span><span class="p">,</span> <span class="p">{}],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_download_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot; Gets download id with the file id &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
@@ -284,24 +231,6 @@
                     <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
                     <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
                     <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;get_file_download_url&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">}],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">edit_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Edits a File&#39;s description and or name &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="nb">id</span><span class="p">[:</span><span class="nb">id</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;set_file&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="s2">&quot;folder_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">[:</span><span class="nb">id</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span>
-                        <span class="s2">&quot;/&quot;</span><span class="p">)],</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">}],</span>
                 <span class="p">]</span>
             <span class="p">)</span>
         <span class="p">)</span>
@@ -685,50 +614,6 @@
 
     <span class="c1"># FileRequest</span>
 
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Gets directories via lernsax login email &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span>
-                        <span class="mi">3</span><span class="p">,</span>
-                        <span class="s2">&quot;get_entries&quot;</span><span class="p">,</span>
-                        <span class="p">{</span>
-                            <span class="s2">&quot;folder_id&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                            <span class="s2">&quot;get_files&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                            <span class="s2">&quot;get_folders&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                            <span class="s2">&quot;recursive&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">recursive</span><span class="p">),</span>
-                        <span class="p">},</span>
-                    <span class="p">],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">Box</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results_raw</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;return&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;OK&quot;</span><span class="p">,</span> <span class="s2">&quot;RESUME&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">results_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;result&quot;</span><span class="p">])</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">error_handler</span><span class="p">(</span>
-                <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">errno</span><span class="p">)(</span><span class="n">results_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;result&quot;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Gets amount of used storage and free storage &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;get_state&quot;</span><span class="p">,</span> <span class="p">{}],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
     <span class="k">async</span> <span class="k">def</span> <span class="nf">get_download_url</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="sd">&quot;&quot;&quot; Gets download id with the file id &quot;&quot;&quot;</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
@@ -739,24 +624,6 @@
                     <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
                     <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
                     <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;get_file_download_url&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">}],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-
-    <span class="k">async</span> <span class="k">def</span> <span class="nf">edit_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Edits a File&#39;s description and or name &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="nb">id</span><span class="p">[:</span><span class="nb">id</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;set_file&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="s2">&quot;folder_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">[:</span><span class="nb">id</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span>
-                        <span class="s2">&quot;/&quot;</span><span class="p">)],</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">}],</span>
                 <span class="p">]</span>
             <span class="p">)</span>
         <span class="p">)</span>
@@ -1251,86 +1118,6 @@ Helper method responses are accessible through the "helpers" key of the returned
 
 
                             </div>
-                            <div id="ApiClient.get_files" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#ApiClient.get_files">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">async def</span>
-            <span class="name">get_files</span><span class="signature">(self, login: str, recursive: bool) -&gt; dict</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_files</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">recursive</span><span class="p">:</span> <span class="nb">bool</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Gets directories via lernsax login email &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span>
-                        <span class="mi">3</span><span class="p">,</span>
-                        <span class="s2">&quot;get_entries&quot;</span><span class="p">,</span>
-                        <span class="p">{</span>
-                            <span class="s2">&quot;folder_id&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
-                            <span class="s2">&quot;get_files&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                            <span class="s2">&quot;get_folders&quot;</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-                            <span class="s2">&quot;recursive&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">recursive</span><span class="p">),</span>
-                        <span class="p">},</span>
-                    <span class="p">],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="n">results</span> <span class="o">=</span> <span class="p">[</span><span class="n">Box</span><span class="p">(</span><span class="n">res</span><span class="p">)</span> <span class="k">for</span> <span class="n">res</span> <span class="ow">in</span> <span class="n">results_raw</span><span class="p">]</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="p">[</span><span class="s2">&quot;return&quot;</span><span class="p">]</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;OK&quot;</span><span class="p">,</span> <span class="s2">&quot;RESUME&quot;</span><span class="p">]:</span>
-            <span class="nb">print</span><span class="p">(</span><span class="n">results_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;result&quot;</span><span class="p">])</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">error_handler</span><span class="p">(</span>
-                <span class="n">results</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">result</span><span class="o">.</span><span class="n">errno</span><span class="p">)(</span><span class="n">results_raw</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">][</span><span class="s2">&quot;result&quot;</span><span class="p">])</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Gets directories via lernsax login email</p>
-</div>
-
-
-                            </div>
-                            <div id="ApiClient.get_state" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#ApiClient.get_state">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">async def</span>
-            <span class="name">get_state</span><span class="signature">(self, login: str) -&gt; dict</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">async</span> <span class="k">def</span> <span class="nf">get_state</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Gets amount of used storage and free storage &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;get_state&quot;</span><span class="p">,</span> <span class="p">{}],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Gets amount of used storage and free storage</p>
-</div>
-
-
-                            </div>
                             <div id="ApiClient.get_download_url" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#ApiClient.get_download_url">#&nbsp;&nbsp</a>
 
@@ -1360,48 +1147,6 @@ Helper method responses are accessible through the "helpers" key of the returned
         </details>
 
             <div class="docstring"><p>Gets download id with the file id</p>
-</div>
-
-
-                            </div>
-                            <div id="ApiClient.edit_file" class="classattr">
-                                        <div class="attr function"><a class="headerlink" href="#ApiClient.edit_file">#&nbsp;&nbsp</a>
-
-        
-            <span class="def">async def</span>
-            <span class="name">edit_file</span><span class="signature">(
-    self,
-    login: str,
-    id: str,
-    description: str,
-    name: str = None
-) -&gt; dict</span>:
-    </div>
-
-                <details>
-            <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span>    <span class="k">async</span> <span class="k">def</span> <span class="nf">edit_file</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">login</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
-        <span class="sd">&quot;&quot;&quot; Edits a File&#39;s description and or name &quot;&quot;&quot;</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">:</span>
-            <span class="k">raise</span> <span class="n">exceptions</span><span class="o">.</span><span class="n">NotLoggedIn</span><span class="p">()</span>
-        <span class="k">if</span> <span class="ow">not</span> <span class="n">name</span><span class="p">:</span>
-            <span class="n">name</span> <span class="o">=</span> <span class="nb">id</span><span class="p">[:</span><span class="nb">id</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span><span class="s2">&quot;,&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>
-        <span class="n">results_raw</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
-            <span class="bp">self</span><span class="o">.</span><span class="n">jsonrpc</span><span class="p">(</span>
-                <span class="p">[</span>
-                    <span class="p">[</span><span class="mi">1</span><span class="p">,</span> <span class="s2">&quot;set_session&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;session_id&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">sid</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">2</span><span class="p">,</span> <span class="s2">&quot;set_focus&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;login&quot;</span><span class="p">:</span> <span class="n">login</span><span class="p">,</span> <span class="s2">&quot;object&quot;</span><span class="p">:</span> <span class="s2">&quot;files&quot;</span><span class="p">}],</span>
-                    <span class="p">[</span><span class="mi">3</span><span class="p">,</span> <span class="s2">&quot;set_file&quot;</span><span class="p">,</span> <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">,</span> <span class="s2">&quot;folder_id&quot;</span><span class="p">:</span> <span class="nb">id</span><span class="p">[:</span><span class="nb">id</span><span class="o">.</span><span class="n">rfind</span><span class="p">(</span>
-                        <span class="s2">&quot;/&quot;</span><span class="p">)],</span> <span class="s2">&quot;name&quot;</span><span class="p">:</span> <span class="n">name</span><span class="p">,</span> <span class="s2">&quot;description&quot;</span><span class="p">:</span> <span class="n">description</span><span class="p">}],</span>
-                <span class="p">]</span>
-            <span class="p">)</span>
-        <span class="p">)</span>
-        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">pack_responses</span><span class="p">(</span><span class="n">results_raw</span><span class="p">,</span> <span class="mi">2</span><span class="p">)</span>
-</pre></div>
-
-        </details>
-
-            <div class="docstring"><p>Edits a File's description and or name</p>
 </div>
 
 

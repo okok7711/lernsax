@@ -40,6 +40,9 @@
                                 <a class="function" href="#Client.post">post</a>
                         </li>
                         <li>
+                                <a class="function" href="#Client.exists">exists</a>
+                        </li>
+                        <li>
                                 <a class="function" href="#Client.background_task">background_task</a>
                         </li>
                 </ul>
@@ -75,10 +78,11 @@
 <span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span><span class="p">,</span> <span class="n">Union</span>
 <span class="kn">import</span> <span class="nn">aiohttp</span>
 <span class="kn">from</span> <span class="nn">lernsax.util</span> <span class="kn">import</span> <span class="n">ApiClient</span>
+<span class="kn">import</span> <span class="nn">aiodav</span>
 <span class="kn">import</span> <span class="nn">atexit</span>
 
 
-<span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="n">ApiClient</span><span class="p">):</span>
+<span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="n">ApiClient</span><span class="p">,</span> <span class="n">aiodav</span><span class="o">.</span><span class="n">Client</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Main object for handling LernSax access and responses. &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -97,6 +101,16 @@
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">(</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">aiohttp</span><span class="o">.</span><span class="n">BasicAuth</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dav</span><span class="p">:</span> <span class="n">aiodav</span><span class="o">.</span><span class="n">Client</span> <span class="o">=</span> <span class="n">aiodav</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span>
+            <span class="s1">&#39;https://www.lernsax.de/webdav.php/&#39;</span><span class="p">,</span> <span class="n">login</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="p">)</span>
+        <span class="c1"># Copying Functions to this client so you don&#39;t need to call self.dav.func, higly bogded but it works</span>
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dav</span><span class="p">):</span>
+            <span class="c1"># dont overwrite functions that already exist</span>
+            <span class="k">if</span> <span class="n">func</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="c1"># copy the function or attr</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dav</span><span class="p">,</span> <span class="n">func</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -110,10 +124,18 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_close_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">json</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="n">f</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Workaroung for LernSax WebDav not passing .exist() checks in aiodav even if the dir exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">background_task</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># refresh session every 5 minutes</span>
@@ -131,12 +153,12 @@
 
         
         <span class="def">class</span>
-        <span class="name">Client</span><wbr>(<span class="base"><a href="util/client.html#ApiClient">lernsax.util.client.ApiClient</a></span>):
+        <span class="name">Client</span><wbr>(<span class="base"><a href="util/client.html#ApiClient">lernsax.util.client.ApiClient</a></span>, <span class="base">aiodav.client.Client</span>):
     </div>
 
                 <details>
             <summary>View Source</summary>
-            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="n">ApiClient</span><span class="p">):</span>
+            <div class="codehilite"><pre><span></span><span class="k">class</span> <span class="nc">Client</span><span class="p">(</span><span class="n">ApiClient</span><span class="p">,</span> <span class="n">aiodav</span><span class="o">.</span><span class="n">Client</span><span class="p">):</span>
     <span class="sd">&quot;&quot;&quot; Main object for handling LernSax access and responses. &quot;&quot;&quot;</span>
 
     <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">email</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">password</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
@@ -155,6 +177,16 @@
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_init</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="p">:</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span> <span class="o">=</span> <span class="n">aiohttp</span><span class="o">.</span><span class="n">ClientSession</span><span class="p">(</span>
+            <span class="n">auth</span><span class="o">=</span><span class="n">aiohttp</span><span class="o">.</span><span class="n">BasicAuth</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dav</span><span class="p">:</span> <span class="n">aiodav</span><span class="o">.</span><span class="n">Client</span> <span class="o">=</span> <span class="n">aiodav</span><span class="o">.</span><span class="n">Client</span><span class="p">(</span>
+            <span class="s1">&#39;https://www.lernsax.de/webdav.php/&#39;</span><span class="p">,</span> <span class="n">login</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">email</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">password</span><span class="p">,</span> <span class="n">session</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="p">)</span>
+        <span class="c1"># Copying Functions to this client so you don&#39;t need to call self.dav.func, higly bogded but it works</span>
+        <span class="k">for</span> <span class="n">func</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dav</span><span class="p">):</span>
+            <span class="c1"># dont overwrite functions that already exist</span>
+            <span class="k">if</span> <span class="n">func</span> <span class="ow">not</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+                <span class="c1"># copy the function or attr</span>
+                <span class="nb">setattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">func</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">dav</span><span class="p">,</span> <span class="n">func</span><span class="p">))</span>
         <span class="k">return</span> <span class="bp">self</span>
 
     <span class="k">def</span> <span class="fm">__del__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
@@ -168,10 +200,18 @@
     <span class="k">async</span> <span class="k">def</span> <span class="nf">_close_session</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
         <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
             <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="o">.</span><span class="n">closed</span><span class="p">:</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">dav_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">post</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">json</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">dict</span><span class="p">,</span> <span class="nb">str</span><span class="p">,</span> <span class="nb">list</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">dict</span><span class="p">:</span>
         <span class="k">async</span> <span class="k">with</span> <span class="bp">self</span><span class="o">.</span><span class="n">_session</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">api</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">json</span><span class="p">)</span> <span class="k">as</span> <span class="n">f</span><span class="p">:</span>
             <span class="k">return</span> <span class="k">await</span> <span class="n">f</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Workaroung for LernSax WebDav not passing .exist() checks in aiodav even if the dir exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
 
     <span class="k">async</span> <span class="k">def</span> <span class="nf">background_task</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
         <span class="c1"># refresh session every 5 minutes</span>
@@ -230,6 +270,30 @@
     
 
                             </div>
+                            <div id="Client.exists" class="classattr">
+                                        <div class="attr function"><a class="headerlink" href="#Client.exists">#&nbsp;&nbsp</a>
+
+        
+            <span class="def">async def</span>
+            <span class="name">exists</span><span class="signature">(self, *args, **kwargs) -&gt; bool</span>:
+    </div>
+
+                <details>
+            <summary>View Source</summary>
+            <div class="codehilite"><pre><span></span>    <span class="k">async</span> <span class="k">def</span> <span class="nf">exists</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        Workaroung for LernSax WebDav not passing .exist() checks in aiodav even if the dir exists.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="kc">True</span>
+</pre></div>
+
+        </details>
+
+            <div class="docstring"><p>Workaroung for LernSax WebDav not passing .exist() checks in aiodav even if the dir exists.</p>
+</div>
+
+
+                            </div>
                             <div id="Client.background_task" class="classattr">
                                         <div class="attr function"><a class="headerlink" href="#Client.background_task">#&nbsp;&nbsp</a>
 
@@ -262,10 +326,7 @@
                 <dd id="Client.refresh_session" class="function"><a href="util/client.html#ApiClient.refresh_session">refresh_session</a></dd>
                 <dd id="Client.logout" class="function"><a href="util/client.html#ApiClient.logout">logout</a></dd>
                 <dd id="Client.get_tasks" class="function"><a href="util/client.html#ApiClient.get_tasks">get_tasks</a></dd>
-                <dd id="Client.get_files" class="function"><a href="util/client.html#ApiClient.get_files">get_files</a></dd>
-                <dd id="Client.get_state" class="function"><a href="util/client.html#ApiClient.get_state">get_state</a></dd>
                 <dd id="Client.get_download_url" class="function"><a href="util/client.html#ApiClient.get_download_url">get_download_url</a></dd>
-                <dd id="Client.edit_file" class="function"><a href="util/client.html#ApiClient.edit_file">edit_file</a></dd>
                 <dd id="Client.get_board" class="function"><a href="util/client.html#ApiClient.get_board">get_board</a></dd>
                 <dd id="Client.add_board_entry" class="function"><a href="util/client.html#ApiClient.add_board_entry">add_board_entry</a></dd>
                 <dd id="Client.get_notes" class="function"><a href="util/client.html#ApiClient.get_notes">get_notes</a></dd>
@@ -279,6 +340,35 @@
                 <dd id="Client.send_quickmessage" class="function"><a href="util/client.html#ApiClient.send_quickmessage">send_quickmessage</a></dd>
                 <dd id="Client.get_quickmessage_history" class="function"><a href="util/client.html#ApiClient.get_quickmessage_history">get_quickmessage_history</a></dd>
                 <dd id="Client.group_lernsax_quickmessage_history_by_chat" class="function"><a href="util/client.html#ApiClient.group_lernsax_quickmessage_history_by_chat">group_lernsax_quickmessage_history_by_chat</a></dd>
+
+            </div>
+            <div><dt>aiodav.client.Client</dt>
+                                <dd id="Client.ROOT" class="variable"><a href="#Client.ROOT">ROOT</a></dd>
+                <dd id="Client.DEFAULT_HTTP_HEADER" class="variable"><a href="#Client.DEFAULT_HTTP_HEADER">DEFAULT_HTTP_HEADER</a></dd>
+                <dd id="Client.DEFAULT_REQUESTS" class="variable"><a href="#Client.DEFAULT_REQUESTS">DEFAULT_REQUESTS</a></dd>
+                <dd id="Client.get_full_path" class="function"><a href="#Client.get_full_path">get_full_path</a></dd>
+                <dd id="Client.list" class="function"><a href="#Client.list">list</a></dd>
+                <dd id="Client.free" class="function"><a href="#Client.free">free</a></dd>
+                <dd id="Client.create_directory" class="function"><a href="#Client.create_directory">create_directory</a></dd>
+                <dd id="Client.is_directory" class="function"><a href="#Client.is_directory">is_directory</a></dd>
+                <dd id="Client.info" class="function"><a href="#Client.info">info</a></dd>
+                <dd id="Client.unlink" class="function"><a href="#Client.unlink">unlink</a></dd>
+                <dd id="Client.delete" class="function"><a href="#Client.delete">delete</a></dd>
+                <dd id="Client.move" class="function"><a href="#Client.move">move</a></dd>
+                <dd id="Client.copy" class="function"><a href="#Client.copy">copy</a></dd>
+                <dd id="Client.download_iter" class="function"><a href="#Client.download_iter">download_iter</a></dd>
+                <dd id="Client.download_to" class="function"><a href="#Client.download_to">download_to</a></dd>
+                <dd id="Client.download_file" class="function"><a href="#Client.download_file">download_file</a></dd>
+                <dd id="Client.download_directory" class="function"><a href="#Client.download_directory">download_directory</a></dd>
+                <dd id="Client.download" class="function"><a href="#Client.download">download</a></dd>
+                <dd id="Client.upload_to" class="function"><a href="#Client.upload_to">upload_to</a></dd>
+                <dd id="Client.upload_file" class="function"><a href="#Client.upload_file">upload_file</a></dd>
+                <dd id="Client.upload_directory" class="function"><a href="#Client.upload_directory">upload_directory</a></dd>
+                <dd id="Client.upload" class="function"><a href="#Client.upload">upload</a></dd>
+                <dd id="Client.get_property" class="function"><a href="#Client.get_property">get_property</a></dd>
+                <dd id="Client.set_property" class="function"><a href="#Client.set_property">set_property</a></dd>
+                <dd id="Client.close" class="function"><a href="#Client.close">close</a></dd>
+                <dd id="Client.resource" class="function"><a href="#Client.resource">resource</a></dd>
 
             </div>
                                 </dl>
