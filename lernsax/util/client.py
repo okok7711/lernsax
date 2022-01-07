@@ -99,50 +99,6 @@ class ApiClient(ABC):
 
     # FileRequest
 
-    async def get_files(self, login: str, recursive: bool) -> dict:
-        """ Gets directories via lernsax login email """
-        if not self.sid:
-            raise exceptions.NotLoggedIn()
-        results_raw = await self.post(
-            self.jsonrpc(
-                [
-                    [1, "set_session", {"session_id": self.sid}],
-                    [2, "set_focus", {"login": login, "object": "files"}],
-                    [
-                        3,
-                        "get_entries",
-                        {
-                            "folder_id": "",
-                            "get_files": 1,
-                            "get_folders": 1,
-                            "recursive": int(recursive),
-                        },
-                    ],
-                ]
-            )
-        )
-        results = [Box(res) for res in results_raw]
-        if not results[-1].result["return"] in ["OK", "RESUME"]:
-            print(results_raw[-1]["result"])
-            raise exceptions.error_handler(
-                results[-1].result.errno)(results_raw[-1]["result"])
-        return self.pack_responses(results_raw, 2)
-
-    async def get_state(self, login: str) -> dict:
-        """ Gets amount of used storage and free storage """
-        if not self.sid:
-            raise exceptions.NotLoggedIn()
-        results_raw = await self.post(
-            self.jsonrpc(
-                [
-                    [1, "set_session", {"session_id": self.sid}],
-                    [2, "set_focus", {"login": login, "object": "files"}],
-                    [3, "get_state", {}],
-                ]
-            )
-        )
-        return self.pack_responses(results_raw, 2)
-
     async def get_download_url(self, login: str, id: str) -> dict:
         """ Gets download id with the file id """
         if not self.sid:
@@ -153,24 +109,6 @@ class ApiClient(ABC):
                     [1, "set_session", {"session_id": self.sid}],
                     [2, "set_focus", {"login": login, "object": "files"}],
                     [3, "get_file_download_url", {"id": id}],
-                ]
-            )
-        )
-        return self.pack_responses(results_raw, 2)
-
-    async def edit_file(self, login: str, id: str, description: str, name: str = None) -> dict:
-        """ Edits a File's description and or name """
-        if not self.sid:
-            raise exceptions.NotLoggedIn()
-        if not name:
-            name = id[:id.rfind(",") + 1]
-        results_raw = await self.post(
-            self.jsonrpc(
-                [
-                    [1, "set_session", {"session_id": self.sid}],
-                    [2, "set_focus", {"login": login, "object": "files"}],
-                    [3, "set_file", {"id": id, "folder_id": id[:id.rfind(
-                        "/")], "name": name, "description": description}],
                 ]
             )
         )

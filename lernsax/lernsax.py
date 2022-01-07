@@ -7,10 +7,11 @@ import asyncio
 from typing import List, Union
 import aiohttp
 from lernsax.util import ApiClient
+import aiodav
 import atexit
 
 
-class Client(ApiClient):
+class Client(ApiClient, aiodav.Client):
     """ Main object for handling LernSax access and responses. """
 
     def __init__(self, email: str, password: str) -> None:
@@ -29,6 +30,16 @@ class Client(ApiClient):
 
     async def _init(self):
         self._session: aiohttp.ClientSession = aiohttp.ClientSession()
+        self.dav_session: aiohttp.ClientSession = aiohttp.ClientSession(
+            auth=aiohttp.BasicAuth(self.email, self.password))
+        self.dav: aiodav.Client = aiodav.Client(
+            'https://www.lernsax.de/webdav.php/', login=self.email, password=self.password, session=self.dav_session)
+        # Copying Functions to this client so you don't need to call self.dav.func, higly bogded but it works
+        for func in dir(self.dav):
+            # dont overwrite functions that already exist
+            if func not in dir(self):
+                # copy the function or attr
+                setattr(self, func, getattr(self.dav, func))
         return self
 
     def __del__(self):
@@ -42,10 +53,18 @@ class Client(ApiClient):
     async def _close_session(self):
         if not self._session.closed:
             await self._session.close()
+        if not self.dav_session.closed:
+            await self.dav_session.close()
 
     async def post(self, json: Union[dict, str, list]) -> dict:
         async with self._session.post(self.api, json=json) as f:
             return await f.json()
+
+    async def exists(self, *args, **kwargs) -> bool:
+        """
+        Workaroung for LernSax WebDav not passing .exist() checks in aiodav even if the dir exists.
+        """
+        return True
 
     async def background_task(self) -> None:
         # refresh session every 5 minutes

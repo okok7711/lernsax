@@ -26,15 +26,23 @@ asyncio.get_event_loop().run_until_complete(main())
 ```
 
 ## Accessing Files via WebDav
-Use aiodav for async webdav access to LernSax, please refer to [this repo](https://github.com/jorgeajimenezl/aiodav) for more info on aiodav
-
+This module has built-in support for WebDav via aiodav \
+just use the lernsax.Client() class the same as if it was the aiodav.Client().\
+visit [this repo](https://github.com/jorgeajimenezl/aiodav) for more info and examples for aiodav\
+\
+Example (as in [the examples dir](https://github.com/okok7711/lernsax/tree/main/examples)):
 ```
-import aiodav
+import lernsax
 import asyncio
 
 async def main():
-    async with Client('https://lernsax.de/webdav.php', login='', password='') as client:
-        await client.download_file('/remote/file.zip', 
-                                    '/local/file.zip',
-                                    progress=progress)
+    client = await lernsax.Client(
+        email="",
+        password=""
+    )
+    await client.login(client.email, client.password)
+    dirs = await client.list()
+    print(dirs)
+
+asyncio.get_event_loop().run_until_complete(main())
 ```
