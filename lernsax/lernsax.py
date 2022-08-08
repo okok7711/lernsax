@@ -5,12 +5,42 @@
 
 import asyncio
 from typing import List, Union
-import aiohttp
+from aiohttp import ClientSession, BasicAuth, ClientResponse
 from lernsax.util import ApiClient
 import aiodav
-import atexit
+from importlib.util import find_spec
+from logging import getLogger
 
+from time import asctime
 
+logger = getLogger(__name__)
+
+_ORJSON = find_spec("orjson")
+
+if _ORJSON: import orjson as json
+else: import json
+
+class HttpClient(ClientSession):
+    def __init__(self, *args, **kwargs) -> None:
+        self.api: str = kwargs.pop("api_uri", "https://www.lernsax.de/jsonrpc.php")
+        super().__init__(
+            *args,
+            **kwargs,
+            json_serialize= lambda obj, *args, **kwargs: json.dumps(obj).decode() if _ORJSON else json.dumps(obj)
+        )
+        
+    async def request(self, method: str, *args, **kwargs):
+        response = await super().request(method, self.api, *args, **kwargs)
+        self.log_req(response)
+        return response
+
+    @staticmethod
+    def log_req(response: ClientResponse):
+        logger.debug(
+            f"{response.request_info.method} [{asctime()}] -> {response.url}: {response.status} [{response.content_type}]"\
+            f"Received Headers: {response.headers}"
+            )
+        
 class Client(ApiClient, aiodav.Client):
     """ Main object for handling LernSax access and responses. """
 
@@ -19,46 +49,23 @@ class Client(ApiClient, aiodav.Client):
         self.password: str = password
         self.sid: str = ""
         self.member_of: List[str] = []
-        self.root_url: str = "https://www.lernsax.de"
-        self.api: str = f"{self.root_url}/jsonrpc.php"
-        self.background: asyncio.Task
-
-    def __await__(self):
-        self.background = asyncio.create_task(self.background_task())
-        atexit.register(self.__del__)
-        return self._init().__await__()
-
-    async def _init(self):
-        self._session: aiohttp.ClientSession = aiohttp.ClientSession()
-        self.dav_session: aiohttp.ClientSession = aiohttp.ClientSession(
-            auth=aiohttp.BasicAuth(self.email, self.password))
+        self.background: asyncio.Task = asyncio.create_task(self.background_task())
+        
+        self.http: HttpClient = HttpClient()
+        self.dav_session: HttpClient = HttpClient(
+            auth = BasicAuth(self.email, self.password))
         self.dav: aiodav.Client = aiodav.Client(
             'https://www.lernsax.de/webdav.php/', login=self.email, password=self.password, session=self.dav_session)
-        # Copying Functions to this client so you don't need to call self.dav.func, higly bogded but it works
+        
+        #* Copying Functions to this client so you don't need to call self.dav.func, higly bogded but it works
         for func in dir(self.dav):
-            # dont overwrite functions that already exist
+            #* dont overwrite functions that already exist
             if func not in dir(self):
-                # copy the function or attr
-                setattr(self, func, getattr(self.dav, func))
-        return self
+                #* copy the function or attr
+                setattr(self, func, getattr(self.dav, func)) 
 
-    def __del__(self):
-        try:
-            loop = asyncio.get_event_loop()
-            loop.create_task(self._close_session())
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            loop.run_until_complete(self._close_session())
-
-    async def _close_session(self):
-        if not self._session.closed:
-            await self._session.close()
-        if not self.dav_session.closed:
-            await self.dav_session.close()
-
-    async def post(self, json: Union[dict, str, list]) -> dict:
-        async with self._session.post(self.api, json=json) as f:
-            return await f.json()
+    async def post(self, json: Union[dict, list]) -> dict:
+        return await (await self.http.request("POST", json=json)).json()
 
     async def exists(self, *args, **kwargs) -> bool:
         """
@@ -67,7 +74,20 @@ class Client(ApiClient, aiodav.Client):
         return True
 
     async def background_task(self) -> None:
-        # refresh session every 5 minutes
-        while True:
-            await asyncio.sleep(60*5)
-            print(await self.refresh_session())
+        """
+        background task to run cleanup after shutting down and to continuously refresh the sesion
+        """
+        async def refresher():
+            #! refresh session every 5 minutes
+            while True:
+                if self.sid: print(await self.refresh_session())
+                await asyncio.sleep(60*5)
+        try:
+            await refresher()
+        finally:
+            await self.__cleanup()
+    
+    async def __cleanup(self):
+        if self.sid: await self.logout()
+        if not self.http.closed: await self.http.close()
+        if not self.dav_session.closed: await self.dav_session.close()
