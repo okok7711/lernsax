@@ -29,13 +29,19 @@ class HttpClient(ClientSession):
             json_serialize= lambda obj, *args, **kwargs: json.dumps(obj).decode() if _ORJSON else json.dumps(obj)
         )
         
-    async def request(self, method: str, *args, **kwargs):
-        response = await super().request(method, self.api, *args, **kwargs)
+    async def request(self, *args, **kwargs):
+        """
+        execute and log a request
+        """
+        response = await super().request(self.api, *args, **kwargs)
         self.log_req(response)
         return response
 
     @staticmethod
     def log_req(response: ClientResponse):
+        """
+        Method for logging requests
+        """
         logger.debug(
             f"{response.request_info.method} [{asctime()}] -> {response.url}: {response.status} [{response.content_type}]"\
             f"Received Headers: {response.headers}"
@@ -65,6 +71,9 @@ class Client(ApiClient, aiodav.Client):
                 setattr(self, func, getattr(self.dav, func)) 
 
     async def post(self, json: Union[dict, list]) -> dict:
+        """
+        Send post request to LernSax
+        """
         return await (await self.http.request("POST", json=json)).json()
 
     async def exists(self, *args, **kwargs) -> bool:
